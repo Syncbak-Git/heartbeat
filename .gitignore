@@ -1,0 +1,13 @@
+#vim temp files
+*~
+*.swp
+*.rpm
+
+#log files
+*.log
+*.err
+
+#ctags
+tags
+
+#ignore the go executables
