@@ -13,9 +13,11 @@ func Heartbeat(t time.Duration, message string, cleanup func()) func(cancel bool
 		message = "Heartbeat timer expired."
 	}
 	tt := time.NewTimer(t)
+	quit := make(chan interface{})
 	f := func(cancel bool) {
 		if cancel {
 			tt.Stop()
+			close(quit)
 		} else {
 			tt.Reset(t)
 		}
@@ -26,6 +28,8 @@ func Heartbeat(t time.Duration, message string, cleanup func()) func(cancel bool
 		}
 		for {
 			select {
+			case <-quit:
+				return
 			case <-tt.C:
 				panic(message)
 			}
