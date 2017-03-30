@@ -11,3 +11,6 @@
 tags
 
 #ignore the go executables
+
+#IDE stuff
+.idea/*
