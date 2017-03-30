@@ -37,3 +37,28 @@ func Heartbeat(t time.Duration, message string, cleanup func()) func(cancel bool
 	}()
 	return f
 }
+
+// Channel sends true on the returned channel if the returned function is not called at
+// least once per the supplied time interval. To cancel the heartbeat, call the returned
+// function with true.
+func Channel(t time.Duration) (<-chan bool, func(bool)) {
+	tt := time.NewTimer(t)
+	quit := make(chan interface{})
+	expired := make(chan bool, 1)
+	f := func(cancel bool) {
+		if cancel {
+			tt.Stop()
+			close(quit)
+		} else {
+			tt.Reset(t)
+		}
+	}
+	go func() {
+		select {
+		case <-quit:
+		case <-tt.C:
+		}
+		expired <- true
+	}()
+	return expired, f
+}
