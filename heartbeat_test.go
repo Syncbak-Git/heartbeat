@@ -1,6 +1,7 @@
 package heartbeat
 
 import (
+	"sync"
 	"testing"
 	"time"
 )
@@ -40,6 +41,21 @@ func TestHeartbeat(t *testing.T) {
 	}
 	// check that we can call h(true) multiple times
 	h(true)
+}
+
+func TestConcurrentAccess(t *testing.T) {
+	hb := Heartbeat(time.Minute, "", nil)
+	wg := sync.WaitGroup{}
+	for i := 0; i < 10; i++ {
+		wg.Add(1)
+		go func() {
+			for j := 0; j < 10000; j++ {
+				hb(false)
+			}
+			wg.Done()
+		}()
+	}
+	wg.Wait()
 }
 
 func ExampleHeartbeat_typical() {
