@@ -39,37 +39,27 @@ func Heartbeat(t time.Duration, message string, cleanup func()) func(cancel bool
 // HeartbeatMonitor launches a go routine that will call a timeout handler function if the returned function is not called at least once per time interval t.
 // This process does not cause a panic and will repeat until the function is canceled
 func HeartbeatMonitor(duration time.Duration, heartbeatTimeoutHandler func()) func(cancel bool) {
-
-	tt := time.NewTimer(duration)
-
-	quit := make(chan interface{})
-
-	// This is the callback function that is returned
-	f := func(cancel bool) {
-		if cancel {
-			tt.Stop()
-			close(quit)
-		} else {
-			tt.Reset(duration)
-		}
-	}
-
+	hb := make(chan bool)
 	go func() {
-
 		for {
 			select {
-			case <-quit:
-				return
-			case <-tt.C:
+			case cancel := <-hb:
+				if cancel {
+					return
+				}
+			case <-time.After(duration):
 				if heartbeatTimeoutHandler != nil {
 					heartbeatTimeoutHandler()
 				}
-				tt.Reset(duration)
 			}
 		}
 	}()
-
-	return f
+	return func(cancel bool) {
+		select {
+		case hb <- cancel:
+		default:
+		}
+	}
 }
 
 // Channel sends true on the returned channel if the returned function is not called at
