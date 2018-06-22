@@ -76,24 +76,28 @@ func HeartbeatMonitor(duration time.Duration, heartbeatTimeoutHandler func()) fu
 // least once per the supplied time interval. To cancel the heartbeat, call the returned
 // function with true.
 func Channel(t time.Duration) (<-chan bool, func(bool)) {
-	tt := time.NewTimer(t)
-	quit := make(chan interface{})
-	expired := make(chan bool, 1)
-	f := func(cancel bool) {
-		if cancel {
-			tt.Stop()
-			close(quit)
-		} else {
-			tt.Reset(t)
+	hb := make(chan bool)
+	expired := make(chan bool)
+	go func() {
+		defer func() {
+			expired <- true
+			close(expired)
+		}()
+		for {
+			select {
+			case cancel := <-hb:
+				if cancel {
+					return
+				}
+			case <-time.After(t):
+				return
+			}
+		}
+	}()
+	return expired, func(cancel bool) {
+		select {
+		case hb <- cancel:
+		default:
 		}
 	}
-	go func() {
-		select {
-		case <-quit:
-		case <-tt.C:
-		}
-		expired <- true
-		close(expired)
-	}()
-	return expired, f
 }
