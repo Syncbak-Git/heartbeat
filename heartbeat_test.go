@@ -36,12 +36,12 @@ func TestHeartbeat(t *testing.T) {
 			} else if i == 4 {
 				h(true)
 			} else if i == 10 {
+				// check that we can call h(true) multiple times
+				h(true)
 				return
 			}
 		}
 	}
-	// check that we can call h(true) multiple times
-	h(true)
 }
 
 func TestConcurrentAccess(t *testing.T) {
